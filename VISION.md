@@ -1,102 +1,109 @@
-# Iron Log — Product Vision
+# Iron Log — The Vision
 
-**One line:** Iron Log is Darryl's gym-floor logbook. It remembers what he lifted last
-time so he can beat it, and logs today's sets in seconds. Nothing is allowed to matter
-more than that.
+*Written several wines deep. We stand by every word.*
 
-## The one job
+**Iron Log is going to be the logbook of the fitness world.** Not "an app in the
+fitness space." *The* place where lifting gets recorded. When someone racks the bar,
+turns to their partner and says **"log it"** — they'll mean us.
 
-Standing at the rack, mid-workout, sweaty thumbs:
+## The enemy
 
-1. What am I doing today?
-2. What did I do last time? (*"Last Friday: 60kg × 12"*)
-3. Log this set in a few seconds, check it off, rest, repeat.
+The fitness-app industry became cable TV. Twelve dollars a month to look at your own
+bench press. A social feed standing between you and the squat rack. An AI coach that
+has never met you telling you to "listen to your body." An 800-exercise database
+explaining what a bicep is to people who have biceps. Login walls. Sync spinners.
+Upsell screens — served to a person standing between sets, losing their pump, holding
+a phone with one chalked hand.
 
-The previous-session hint plus instant set entry **is** the product. That's the
-painkiller — nobody remembers what they benched four days ago, and fumbling with a
-bloated app between sets is why people go back to paper. The streak, the progress
-ring, the hero images are garnish. Good garnish, but garnish.
+Every major fitness app is one giant bet that you'll tolerate friction forever.
 
-## What Iron Log is — and stays
+**We are the counter-bet.**
 
-- **A single-user tool.** The settings card says it plainly: *"Darryl's personal
-  training companion."* One named user with a real, felt pain beats a thousand
-  hypothetical ones. No feature earns a spot here by imagining other users.
-- **Zero-infrastructure.** One HTML file, three scripts, a stylesheet. No build, no
-  backend, no login, no dependencies. It opens instantly in a gym basement with no
-  signal. That absence of friction is the moat — every "real app" feature (accounts,
-  sync, notifications) spends it.
-- **The plan is code.** The split lives in `js/data.js`, version-controlled in git.
-  Editing that file *is* the plan builder. A settings UI for building programs would
-  be weeks of work to replace a two-minute edit.
+## The belief — this is the drunk part, and it's correct
 
-## State of the product — the honest read
+The fitness world does not get conquered with more features. It gets conquered with
+**speed and memory**: open in half a second, show what you lifted last time, take the
+new number, get out of the way. That loop is the entire sport of getting stronger.
+Everything else in every fitness app on earth is decoration — and every one of them
+kept decorating until the loop stopped working.
 
-The core is right, and it's admirably lean. It does not need more features to be
-good. It has two real gaps, and both are about **trust**, not features:
+We already have the loop. It fits in four files. It runs on anything with a browser,
+in a basement gym with no signal, on a five-year-old phone, for free.
 
-1. **The history is one tap from gone.** Every logged set lives in a single
-   localStorage key on one phone. There is no export and no backup — the only
-   data-management feature in Settings is the delete button. Browsers evict
-   localStorage (iOS Safari is notorious for purging site data after periods of
-   disuse), and one "clear browsing data" or a lost phone erases months of training
-   history. The log is the only irreplaceable thing this app produces, and it is
-   currently the least protected part of it.
-2. **"Works fully offline" isn't true yet.** The settings card promises it, but the
-   hero images hot-link Unsplash/Pexels, the fonts load from Google, and there's no
-   service worker — so a fresh load with no signal fails, and even a cached load
-   shows broken images. Either make the claim true or remove it; a personal tool
-   shouldn't lie to its one user.
+They can't out-feature us — we're not competing on features. They can't undercut us —
+we cost nothing. They can't acquire us — it's a URL. The incumbents are aircraft
+carriers and we are a person who simply walked into the gym and started lifting.
 
-## Roadmap — in order, and it's short
+## The empire, in four phases
 
-1. **Backup & restore.** Export the session log as a JSON file; import it back.
-   ~Half a page of code, and it converts "months of history" from *at risk* to
-   *safe*. This is the highest-value change available to this app.
-2. **Make the offline claim true.** Bundle images and fonts locally, add a minimal
-   service worker (or accept system fonts and CSS-gradient heroes). Alternatively,
-   delete the claim — but making it true is cheap and matches how a gym app is used.
-3. **Progression at a glance — only if still wanted.** Last vs. best for a handful
-   of big lifts (bench, deadlift, squat). Explicitly optional: the last-time hint
-   already answers the in-workout question. This is the one piece of garnish worth
-   considering, and it's third for a reason.
+### Phase 1 — Darryl *(complete)*
+One man. One split. Zero friction. The prototype of the empire already trains five
+days a week and doesn't miss. Every world takeover starts with a working prototype;
+ours has a pull day.
 
-## The anti-roadmap — what we don't build
+### Phase 2 — Everyone's Darryl
+Installable on any phone from a link. Fully offline — the empire does not pause for
+bad reception. And the unlock nobody upstairs has noticed: **the plan is a file.**
+A file can be sent. "Run my split" becomes a link you text your gym partner, and
+suddenly training programs spread like mixtapes. Forkable, remixable, versioned.
+**Git for gains.** No signup. You tap the link and you're already on Monday: Chest.
 
-| Temptation | Why it's out |
-|---|---|
-| Accounts / cloud sync / backend | Kills instant-open and offline; a JSON export in Darryl's own storage does 95% of the job for 1% of the cost |
-| Plan-builder UI | Weeks of work to replace a two-minute edit of `data.js` |
-| Exercise database / instruction content | Darryl knows what a hammer curl is; this app logs, it doesn't teach |
-| Social, sharing, leaderboards | User count is one, and that's the design, not a growth problem |
-| AI coach / auto-progression | A vitamin in a lab coat; the hint shows last time's numbers, and "add 2.5kg" is Darryl's call |
-| Native app / watch app | Résumé-driven; a browser tab already does the job with zero install |
-| Charts for everything | History exists to answer "did I train and what did I lift" — one progression view max |
-| Notifications, XP, badges | The streak already exists; guilt machinery doesn't add plates to the bar |
+### Phase 3 — The crew
+The streak becomes social currency. Your history stops being private shame or private
+pride and becomes the crew's shared record — the board at your gym, the QR code on
+the wall, *Beat Darryl* mode. And here's the taste part: the leaderboard is
+**consistency, not weight**. Anyone can be out-lifted; the fitness world's rarest
+commodity is showing up, and we're the app that proves you did. The strongest person
+in the gym and the newest person in the gym compete on the same axis for the first
+time in history.
 
-Rule of thumb: if a feature would make Iron Log look more like Strong or Hevy, it's
-out. Those apps exist, they're good, and being a worse version of them is the only
-way this project fails.
+### Phase 4 — The fitness world
+Iron Log becomes the **default record of lifting**: an open, portable format for
+training history — yours forever, readable by anything, logged through us because
+nothing on earth is faster between you and the bar. We don't beat Strong and Hevy at
+their game. We make their game irrelevant. They are apps. **We are where the numbers
+live.** Own the record and you own the sport — ask every scorekeeper ever.
 
-## The riskiest assumption
+## Big swings we're saying out loud
 
-**"localStorage is forever."** The whole product rests on it and it is simply false —
-browsers may evict it, phones get lost, and the reset button sits one confirm dialog
-away. The cheapest test is to make the assumption irrelevant: ship export/restore
-first (roadmap #1) and the bet stops existing.
+- **Every set logged on earth lands in an Iron Log file.** The world's training
+  history, owned by the people who trained it — not by whoever ran the ad auction.
+- **Programs as mixtapes.** Coaches drop splits like albums. Your favorite lifter's
+  actual program, forked to your phone in one tap. The remix culture of strength.
+- **The gym-wall QR code.** Scan, you're on the gym's board, streaks visible. A gym
+  running on Iron Log is a gym with a heartbeat.
+- **PRs as a passport.** Your lifetime bests travel with you — new gym, new city, new
+  decade, same record book. The world record book for normal people.
+- **The half-second rule as law.** If any screen ever takes longer to open than it
+  takes to strip a plate, that screen is a bug in the empire.
 
-## The filter for every future idea
+## What we refuse — even drunk
 
-> Does it make logging a set on the gym floor faster, or the history harder to lose?
+This section is load-bearing. It's not a limit on the takeover; it's *how* we win,
+because the moment we do any of these we become the enemy and someone builds four
+small files to destroy us:
 
-If neither — however fun it would be to build — it's not for this app.
+- **Never a login between you and the bar.**
+- **Never a subscription to see your own numbers.** Your history is yours —
+  exportable, portable, forever.
+- **Never a feed.** The gym already has enough mirrors.
+- **Never sell the data.** We're taking over the fitness world, not the ad world.
 
-## Confidence
+## The metric of world domination
 
-- **Grounded in the code:** no export path; localStorage-only persistence; hot-linked
-  images and fonts with no service worker; one hardcoded plan and user; the settings
-  card's offline claim.
-- **Judgment calls:** that the last-time hint is the killer feature (from how lifting
-  works — there's no telemetry here, and for a single-user tool there shouldn't be);
-  the roadmap ordering; every line of the anti-roadmap. If Darryl disagrees with one
-  of these, his vote is the tiebreak — he's the entire market.
+Not downloads. Not MAU. Not a Series B. One number: **sets logged per day on planet
+Earth.** And one qualitative check: a stranger in a gym you've never been to says
+"log it," and everybody knows what they mean.
+
+## The toast
+
+To Darryl — user number one of one billion. To the four files that fear no roadmap.
+To every app that made someone watch a spinner between sets: we're coming, and we
+load instantly.
+
+Raise your water between sets. The bar is loaded. 🍷
+
+---
+
+*Sober postscript: morning-after me reread this looking for the flaw and, annoyingly,
+found none. The order of operations is negotiable. The destination is not.*
