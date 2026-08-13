@@ -1,4 +1,21 @@
-:root {
+/* Self-hosted type — no foreign server is load-bearing (IL-02) */
+@font-face {
+    font-family: 'Bebas Neue';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/bebas-neue.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/manrope.woff2') format('woff2');
+  }
+
+  :root {
     --background: 0 0% 98%;
     --foreground: 0 0% 4%;
     --card: 0 0% 100%;
@@ -688,8 +705,8 @@
   
   .wkgrid .row {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
   }
   
   .wkgrid .col {
@@ -706,8 +723,8 @@
   }
   
   .circle {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 99px;
     display: flex;
     align-items: center;
@@ -715,11 +732,27 @@
     border: 2px solid hsl(var(--border));
     color: hsl(var(--muted-foreground));
   }
-  
+
   .circle.on {
     background: hsl(var(--success));
     border-color: hsl(var(--success));
     color: hsl(var(--success-foreground));
+  }
+
+  .circle.off {
+    border-style: dashed;
+    opacity: .45;
+  }
+
+  .circle.today {
+    border-color: hsl(var(--primary));
+  }
+
+  .circle .pip {
+    width: 6px;
+    height: 6px;
+    border-radius: 99px;
+    background: hsl(var(--muted-foreground) / .4);
   }
   
   .hitem {
@@ -1013,4 +1046,383 @@
     background: hsl(var(--muted));
     color: hsl(var(--muted-foreground));
     border: 1px solid hsl(var(--border));
+  }
+
+  /* ---------------- Empire-era components ---------------- */
+
+  /* Small action buttons */
+  .btnrow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .12s;
+  }
+
+  .btn-sm:active {
+    transform: scale(.96);
+  }
+
+  .btn-sm.primary {
+    background: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .btn-sm.danger {
+    color: hsl(var(--destructive));
+    border-color: hsl(var(--destructive) / .4);
+  }
+
+  .btn-sm.grow {
+    flex: 1;
+  }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+  }
+
+  .btn-icon:disabled {
+    opacity: .35;
+    cursor: default;
+  }
+
+  .btn-icon.danger {
+    color: hsl(var(--destructive));
+  }
+
+  /* Ghost mode (IL-13) */
+  .ghost-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0 12px 24px;
+    font-size: 11px;
+    font-weight: 600;
+    color: hsl(265 80% 70%);
+  }
+
+  .ghost-hint .v {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .ghost-active {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: hsl(265 80% 70%);
+  }
+
+  /* Voice logging (IL-14) */
+  .mic-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary));
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+  }
+
+  .mic-btn.listening {
+    color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+    animation: pop 1s infinite;
+  }
+
+  /* Plan library (IL-07) */
+  .plan-row {
+    border-radius: 16px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    padding: 14px 16px;
+  }
+
+  .plan-row.active {
+    border-color: hsl(var(--primary) / .5);
+  }
+
+  .plan-name {
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .plan-row-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .plan-row-actions .btn-sm {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  /* Remix editor (IL-08) */
+  .ed-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 700;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 4px;
+  }
+
+  .ed-input {
+    width: 100%;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary));
+    color: hsl(var(--foreground));
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 12px;
+    outline: none;
+  }
+
+  .ed-input:focus {
+    box-shadow: 0 0 0 2px hsl(var(--primary));
+  }
+
+  .ed-title-input {
+    height: 56px;
+    font-size: 32px;
+    text-transform: uppercase;
+    margin-top: 8px;
+    font-weight: 400;
+  }
+
+  .ed-ex {
+    border-radius: 14px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ed-ex.is-break {
+    border-style: dashed;
+    opacity: .8;
+  }
+
+  .ed-ex-top,
+  .ed-ex-bottom {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .ed-name {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ed-sets {
+    width: 64px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  .ed-target {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .muscle-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 99px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary));
+    color: hsl(var(--foreground));
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: capitalize;
+    cursor: pointer;
+  }
+
+  .chip.on {
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary));
+  }
+
+  .chip .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 99px;
+  }
+
+  /* Settings rows & controls */
+  .seclabel {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 700;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 16px;
+  }
+
+  .setrow-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary) / .5);
+    padding: 12px 14px;
+    cursor: pointer;
+    color: hsl(var(--foreground));
+    font-family: inherit;
+    transition: transform .12s;
+  }
+
+  .setrow-btn:active {
+    transform: scale(.98);
+  }
+
+  .setrow-ic {
+    color: hsl(var(--primary));
+    flex-shrink: 0;
+  }
+
+  .setrow-t {
+    display: block;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .setrow-s {
+    display: block;
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    margin-top: 2px;
+  }
+
+  .seg {
+    display: flex;
+    border-radius: 10px;
+    border: 1px solid hsl(var(--border));
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .seg-btn {
+    height: 36px;
+    padding: 0 16px;
+    border: none;
+    background: hsl(var(--secondary));
+    color: hsl(var(--muted-foreground));
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .seg-btn.on {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .lang-select {
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary));
+    color: hsl(var(--foreground));
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 0 10px;
+    outline: none;
+  }
+
+  /* PR passport (IL-19) */
+  .record-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed hsl(var(--border));
+    font-size: 13px;
+  }
+
+  .record-row:last-of-type {
+    border-bottom: none;
+  }
+
+  .record-rank {
+    font-family: 'Bebas Neue';
+    font-size: 18px;
+    color: hsl(var(--primary));
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .record-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .record-val {
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .record-date {
+    font-size: 11px;
+    flex-shrink: 0;
   }

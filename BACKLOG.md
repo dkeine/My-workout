@@ -9,6 +9,18 @@ everything unflagged runs on four files and spite.
 an empire whose records evaporate with a cleared cache is a rounding error, and
 right now that's us.
 
+## Scoreboard
+
+| Campaign | Status |
+|---|---|
+| 0 — Arm the Citadel (IL-01..04) | ✅ **SHIPPED** — log exports/restores, zero foreign requests, installable PWA, offline cold-start verified, reset has a parachute |
+| 1 — Mixtape Economy (IL-05..11) | ✅ **SHIPPED** — plans are data, share links + cover pages work end-to-end, library, remix editor, kg/lb, any-shape splits |
+| 2 — Crew Wars (IL-12,13,14,16) | ✅ **SHIPPED** serverless half — flex card, ghost mode, voice logging, QR poster. IL-15 gym board 🚩 awaits its server, per plan |
+| 3 — World Record (IL-17..20) | ✅ **SHIPPED** — format spec published, Strong/Hevy/FitNotes importers, PR passport, five languages. IL-21 Monument 🚩 awaits its server |
+
+Verified: 25 node unit tests + 31 Playwright browser checks, all green, including
+airplane-mode cold launch and a QR that decodes with an independent reader.
+
 ---
 
 ## Campaign 0 — Arm the Citadel *(week one, no excuses)*

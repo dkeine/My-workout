@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iron Log — Gym Poster</title>
+<style>
+  @font-face {
+    font-family: 'Bebas Neue';
+    src: url('fonts/bebas-neue.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Manrope';
+    src: url('fonts/manrope.woff2') format('woff2');
+    font-weight: 200 800;
+    font-display: swap;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Manrope', -apple-system, sans-serif;
+    background: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    gap: 20px;
+  }
+  .controls {
+    width: 100%;
+    max-width: 640px;
+    background: #262626;
+    color: #eee;
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .controls label { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #999; }
+  .controls input {
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid #3a3a3a;
+    background: #171717;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 12px;
+    outline: none;
+  }
+  .controls .row { display: flex; gap: 8px; }
+  .controls button {
+    flex: 1;
+    height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: #ff4b0a;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .controls .hint { font-size: 12px; color: #888; line-height: 1.5; }
+  .controls .err { color: #ff6b4a; font-size: 12px; font-weight: 700; display: none; }
+
+  /* The poster itself — A4 portrait proportions */
+  .poster {
+    width: 640px;
+    max-width: 100%;
+    aspect-ratio: 210 / 297;
+    background: #ffffff;
+    color: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    padding: 6% 7%;
+    position: relative;
+    overflow: hidden;
+  }
+  .poster .bar { position: absolute; top: 0; left: 0; right: 0; height: 2.4%; background: linear-gradient(90deg, #ff4b0a, #ffb347); }
+  .poster .brand { font-family: 'Bebas Neue'; font-size: 300%; letter-spacing: .04em; color: #ff4b0a; margin-top: 2%; }
+  .poster h1 {
+    font-family: 'Bebas Neue';
+    font-size: 640%;
+    line-height: .92;
+    text-transform: uppercase;
+    margin-top: 2%;
+  }
+  .poster .sub { font-size: 120%; font-weight: 700; color: #444; margin-top: 3%; line-height: 1.5; }
+  .poster .qr-zone { display: flex; align-items: center; gap: 6%; margin-top: auto; }
+  .poster canvas { width: 38%; height: auto; image-rendering: pixelated; border: 4px solid #0a0a0a; }
+  .poster .steps { flex: 1; font-size: 100%; font-weight: 600; color: #222; line-height: 1.7; }
+  .poster .steps b { color: #ff4b0a; }
+  .poster .foot { margin-top: 6%; padding-top: 3%; border-top: 3px solid #0a0a0a; display: flex; justify-content: space-between; font-weight: 800; font-size: 90%; }
+  .poster .url { color: #ff4b0a; word-break: break-all; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .controls { display: none; }
+    .poster { width: 100%; aspect-ratio: auto; min-height: 96vh; }
+  }
+</style>
+</head>
+<body>
+  <div class="controls">
+    <label for="url">App URL for the QR code</label>
+    <input id="url" spellcheck="false" />
+    <div class="err" id="err">URL too long for a QR code (max ~100 characters) — use a shorter link.</div>
+    <div class="row">
+      <button id="print">Print the poster</button>
+    </div>
+    <div class="hint">Hang it by the squat rack. One scan puts the logbook on their phone —
+      no app store, no signup. Whiteboards had a good century.</div>
+  </div>
+
+  <div class="poster" id="poster">
+    <div class="bar"></div>
+    <div class="brand">IRON LOG</div>
+    <h1>This gym<br/>keeps a<br/>logbook.</h1>
+    <div class="sub">What did you lift last time? Exactly.<br/>Scan it. Log it. Beat it.</div>
+    <div class="qr-zone">
+      <canvas id="qr"></canvas>
+      <div class="steps">
+        <b>1.</b> Scan the code<br/>
+        <b>2.</b> Add to home screen<br/>
+        <b>3.</b> Log today's lifts<br/>
+        <b>4.</b> Beat them next time
+      </div>
+    </div>
+    <div class="foot"><span>FREE · OFFLINE · NO SIGNUP</span><span class="url" id="url-label"></span></div>
+  </div>
+
+<script src="js/qr.js"></script>
+<script>
+  const input = document.getElementById('url');
+  const err = document.getElementById('err');
+  const label = document.getElementById('url-label');
+
+  function defaultUrl() {
+    return location.origin + location.pathname.replace(/poster\.html$/, '');
+  }
+
+  function redraw() {
+    const url = input.value.trim();
+    const ok = url && qrToCanvas(document.getElementById('qr'), url, 8, 4);
+    err.style.display = ok || !url ? 'none' : 'block';
+    label.textContent = url.replace(/^https?:\/\//, '');
+  }
+
+  input.value = defaultUrl();
+  input.addEventListener('input', redraw);
+  document.getElementById('print').addEventListener('click', () => window.print());
+  redraw();
+</script>
+</body>
+</html>
