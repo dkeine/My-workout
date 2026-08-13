@@ -64,6 +64,23 @@ function csvDate(v) {
   return null;
 }
 
+/* Source weight unit, when the CSV header states it. */
+function detectCsvUnit(cols, app) {
+  if (app === 'Hevy') return cols['weight_kg'] != null ? 'kg' : cols['weight_lbs'] != null ? 'lb' : null;
+  if (app === 'FitNotes') return cols['weight (kgs)'] != null ? 'kg' : cols['weight (lbs)'] != null ? 'lb' : null;
+  if (app === 'Strong') return cols['weight (kg)'] != null ? 'kg' : cols['weight (lb)'] != null ? 'lb' : null;
+  return null;
+}
+
+/* Convert into the user's unit when the source unit is known and differs. */
+function convertWeight(v, srcUnit) {
+  if (v == null || !srcUnit) return v;
+  const target = getUnit();
+  if (srcUnit === target) return v;
+  const out = srcUnit === 'kg' ? v * 2.20462 : v / 2.20462;
+  return Math.round(out * 10) / 10;
+}
+
 /* Turn CSV rows into {date -> {title, entries: [{name, weight, reps}]}} */
 function extractWorkouts(rows, app) {
   const cols = csvColumns(rows[0]);
@@ -73,6 +90,7 @@ function extractWorkouts(rows, app) {
     FitNotes: { date: findCol(cols, ['date']), title: -1, ex: findCol(cols, ['exercise']), weight: findCol(cols, ['weight (kgs)', 'weight (lbs)', 'weight']), reps: findCol(cols, ['reps']) },
   }[app];
   if (!spec || spec.date < 0 || spec.ex < 0) return {};
+  const srcUnit = detectCsvUnit(cols, app);
 
   const byDate = {};
   for (let i = 1; i < rows.length; i++) {
@@ -84,7 +102,7 @@ function extractWorkouts(rows, app) {
     if (spec.title >= 0 && r[spec.title] && !day.title) day.title = r[spec.title].trim();
     day.entries.push({
       name: name.slice(0, 80),
-      weight: spec.weight >= 0 ? csvNum(r[spec.weight]) : null,
+      weight: spec.weight >= 0 ? convertWeight(csvNum(r[spec.weight]), srcUnit) : null,
       reps: spec.reps >= 0 ? Math.round(csvNum(r[spec.reps]) || 0) || null : null,
     });
   }

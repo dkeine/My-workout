@@ -61,8 +61,8 @@ function startVoiceEntry(onResult, onFail) {
     }
     onFail(ev.results[0][0] ? ev.results[0][0].transcript : '');
   };
-  rec.onerror = () => { if (!handled) onFail(null); };
-  rec.onend = () => { if (!handled) onFail(undefined); };
+  rec.onerror = () => { if (!handled) { handled = true; onFail(null); } };
+  rec.onend = () => { if (!handled) { handled = true; onFail(undefined); } };
   rec.start();
   return rec;
 }

@@ -63,9 +63,40 @@ function render() {
     if (todaySession.completed && !wasComplete) {
       wasComplete = true;
       toast(t('today.crushed'), t('today.crushedSub'));
+      releaseWakeLock();
+      const total = computeStats().total;
+      if (total > 0 && total % 10 === 0) {
+        setTimeout(() => toast(t('settings.backupNudge', { n: total }), t('settings.backupNudgeSub')), 3600);
+      }
     }
     if (!todaySession.completed) wasComplete = false;
   }
+
+  /* Keep the screen awake mid-session — phones sleep, sets don't (v2). */
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch (e) {}
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release().catch(() => {});
+      wakeLock = null;
+    }
+  }
+
+  function syncWakeLock() {
+    const wantLock = currentTab === 'today' && todaySession &&
+      todaySession.exercises.length > 0 && !todaySession.completed &&
+      document.visibilityState === 'visible';
+    if (wantLock && !wakeLock) requestWakeLock();
+    else if (!wantLock) releaseWakeLock();
+  }
+
+  document.addEventListener('visibilitychange', () => syncWakeLock());
 
   function summaryStr(prev) {
     if (!prev || !prev.sets.length) return null;
@@ -134,6 +165,7 @@ function render() {
     html += `</div>`;
     v.innerHTML = html;
     if (!isRest) buildCards();
+    syncWakeLock();
   }
 
   function fillFirstOpenSet(exr, weight, reps, card) {
@@ -153,6 +185,7 @@ function render() {
     const list = document.getElementById('ex-list');
     if (!list) return;
     list.innerHTML = '';
+    const ghostStore = getGhost();
 
     todaySession.exercises.forEach((exr, i) => {
       const el = document.createElement('div');
@@ -165,7 +198,7 @@ function render() {
       const simple = exr.kind === 'cardio';
       const prev = todayPrev[exr.name];
       const summ = summaryStr(prev);
-      const ghost = getGhost() && todayGhost[exr.name] ? summaryStr(todayGhost[exr.name]) : null;
+      const ghost = ghostStore && todayGhost[exr.name] ? summaryStr(todayGhost[exr.name]) : null;
 
       el.className = 'card' + (exr.skipped ? ' skipped' : exr.done ? ' done' : '');
       el.dataset.idx = i;
@@ -193,7 +226,7 @@ function render() {
         inner += `<div class="prev-hint">${icon('trendingUp', 14)}<span>${t('today.last', { when: relDay(prev.date) })} <span class="v">${esc(summ)}</span></span></div>`;
       }
       if (ghost && !exr.skipped) {
-        inner += `<div class="ghost-hint">${icon('ghost', 14)}<span>${esc(getGhost().label)}: <span class="v">${esc(ghost)}</span> — ${t('today.beatIt')}</span></div>`;
+        inner += `<div class="ghost-hint">${icon('ghost', 14)}<span>${esc(ghostStore.label)}: <span class="v">${esc(ghost)}</span> — ${t('today.beatIt')}</span></div>`;
       }
 
       if (simple) {
@@ -478,6 +511,8 @@ function render() {
     document.getElementById('ed-add-ex').onclick = () => {
       day.exercises.push({ name: '', sets: 3, target: '10-15 reps', kind: 'exercise' });
       render();
+      const names = document.querySelectorAll('.ed-ex .ed-name');
+      if (names.length) names[names.length - 1].focus();
     };
     document.getElementById('ed-add-break').onclick = () => {
       day.exercises.push({ name: 'Short Break', sets: 0, target: 'Rest & recover', kind: 'break' });
@@ -492,7 +527,7 @@ function render() {
       const name = row.querySelector('.ed-name');
       if (name) name.oninput = ev => { e.name = ev.target.value; };
       const sets = row.querySelector('.ed-sets');
-      if (sets) sets.oninput = ev => { e.sets = Math.max(1, Math.min(10, parseInt(ev.target.value) || 1)); };
+      if (sets) sets.oninput = ev => { e.sets = clampSets(ev.target.value); };
       const target = row.querySelector('.ed-target');
       if (target) target.oninput = ev => { e.target = ev.target.value; };
       row.querySelectorAll('[data-a]').forEach(btn => {
@@ -610,6 +645,7 @@ function render() {
 
   /* ---- HISTORY (+ IL-19 records) ---- */
   let recordsExpanded = false;
+  let historyLimit = 30; // imported histories can be years long — half-second rule
 
   function fmtDate(iso) {
     const d = new Date(iso + 'T00:00:00');
@@ -621,9 +657,10 @@ function render() {
     const records = computeRecords();
     const u = getUnit();
 
+    const visibleSessions = s.sessions.slice(0, historyLimit);
     let sessions = s.sessions.length === 0
       ? `<p class="muted" style="font-size:14px;padding:32px 0;text-align:center">${t('history.empty')}</p>`
-      : '<div class="stack">' + s.sessions.map((x) => {
+      : '<div class="stack">' + visibleSessions.map((x) => {
           const trackableExercises = (x.exercises || []).filter(e => e.kind !== 'break');
 
           const detailsHtml = trackableExercises.map(e => {
@@ -672,7 +709,11 @@ function render() {
               <div class="history-body">${detailsHtml}</div>
             </details>
           `;
-        }).join('') + '</div>';
+        }).join('') +
+        (s.sessions.length > historyLimit
+          ? `<button class="btn-sm" id="hist-more">${icon('chevronDown', 15)} ${t('history.showMore')} (${s.sessions.length - historyLimit})</button>`
+          : '') +
+        '</div>';
 
     const shown = recordsExpanded ? records : records.slice(0, 6);
     const recordsHtml = records.length ? `
@@ -709,6 +750,8 @@ function render() {
     document.getElementById('btn-flex').onclick = shareFlexCard;
     const recToggle = document.getElementById('rec-toggle');
     if (recToggle) recToggle.onclick = () => { recordsExpanded = !recordsExpanded; render(); };
+    const histMore = document.getElementById('hist-more');
+    if (histMore) histMore.onclick = () => { historyLimit += 50; render(); };
   }
 
 /* ---- SETTINGS ---- */
@@ -773,7 +816,7 @@ function renderSettings(v) {
         <div class="muted" style="font-size:12px;margin-bottom:12px">${t('settings.ghostSub')}</div>
         ${ghost ? `<div class="ghost-active">${icon('ghost', 16)} <span>${t('settings.ghostActive', { label: esc(ghost.label) })}</span></div>` : ''}
         <div class="stack" style="gap:8px">
-          ${settingsRow('ghost', t('settings.ghostLoad'), t('settings.importSub'), 'btn-ghost-load')}
+          ${settingsRow('ghost', t('settings.ghostLoad'), t('settings.ghostLoadSub'), 'btn-ghost-load')}
           ${settingsRow('trendingUp', t('settings.ghostSelf'), '', 'btn-ghost-self')}
           ${ghost ? settingsRow('x', t('settings.ghostClear'), '', 'btn-ghost-clear') : ''}
         </div>
@@ -808,6 +851,7 @@ function renderSettings(v) {
     });
     document.getElementById('lang-select').onchange = e => {
       setLang(e.target.value);
+      document.documentElement.lang = getLang();
       renderNav();
       render();
     };
@@ -873,10 +917,17 @@ function renderSettings(v) {
 
   /* ---------------- INIT APP ---------------- */
   initTheme();
+  document.documentElement.lang = getLang();
   renderNav();
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
+    // announce updates, but never on first install
+    let hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController) toast(t('app.updated'), t('app.updatedSub'));
+      hadController = true;
+    });
   }
 
   window.addEventListener('hashchange', () => { handleIncomingLink(); });

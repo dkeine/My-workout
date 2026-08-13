@@ -14,6 +14,10 @@ const LANGS = [
 
 const I18N = {
   en: {
+    'app.updated': 'Iron Log updated', 'app.updatedSub': 'Reload to get the newest version.',
+    'settings.ghostLoadSub': 'Pick any Iron Log backup file',
+    'settings.backupNudge': '{n} sessions logged — back them up', 'settings.backupNudgeSub': 'Settings → Export backup. Takes five seconds.',
+    'history.showMore': 'Show more',
     'nav.today': 'Today', 'nav.plan': 'Plan', 'nav.history': 'History', 'nav.settings': 'Settings',
     'common.cancel': 'Cancel', 'common.save': 'Save', 'common.delete': 'Delete', 'common.back': 'Back',
 
@@ -114,6 +118,10 @@ const I18N = {
   },
 
   es: {
+    'app.updated': 'Iron Log actualizado', 'app.updatedSub': 'Recarga para tener la última versión.',
+    'settings.ghostLoadSub': 'Elige cualquier copia de Iron Log',
+    'settings.backupNudge': '{n} sesiones registradas — haz una copia', 'settings.backupNudgeSub': 'Ajustes → Exportar copia. Cinco segundos.',
+    'history.showMore': 'Ver más',
     'nav.today': 'Hoy', 'nav.plan': 'Plan', 'nav.history': 'Historial', 'nav.settings': 'Ajustes',
     'common.cancel': 'Cancelar', 'common.save': 'Guardar', 'common.delete': 'Eliminar', 'common.back': 'Volver',
     'today.count': '{done} / {total} ejercicios hechos',
@@ -205,6 +213,10 @@ const I18N = {
   },
 
   pt: {
+    'app.updated': 'Iron Log atualizado', 'app.updatedSub': 'Recarregue para ter a versão mais nova.',
+    'settings.ghostLoadSub': 'Escolha qualquer backup do Iron Log',
+    'settings.backupNudge': '{n} sessões registradas — faça um backup', 'settings.backupNudgeSub': 'Ajustes → Exportar backup. Leva cinco segundos.',
+    'history.showMore': 'Mostrar mais',
     'nav.today': 'Hoje', 'nav.plan': 'Plano', 'nav.history': 'Histórico', 'nav.settings': 'Ajustes',
     'common.cancel': 'Cancelar', 'common.save': 'Salvar', 'common.delete': 'Excluir', 'common.back': 'Voltar',
     'today.count': '{done} / {total} exercícios feitos',
@@ -296,6 +308,10 @@ const I18N = {
   },
 
   fr: {
+    'app.updated': 'Iron Log mis à jour', 'app.updatedSub': 'Recharge pour avoir la dernière version.',
+    'settings.ghostLoadSub': "Choisis n'importe quelle sauvegarde Iron Log",
+    'settings.backupNudge': '{n} séances enregistrées — sauvegarde-les', 'settings.backupNudgeSub': 'Réglages → Exporter une sauvegarde. Cinq secondes.',
+    'history.showMore': 'Voir plus',
     'nav.today': "Aujourd'hui", 'nav.plan': 'Plan', 'nav.history': 'Historique', 'nav.settings': 'Réglages',
     'common.cancel': 'Annuler', 'common.save': 'Enregistrer', 'common.delete': 'Supprimer', 'common.back': 'Retour',
     'today.count': '{done} / {total} exercices faits',
@@ -387,6 +403,10 @@ const I18N = {
   },
 
   de: {
+    'app.updated': 'Iron Log aktualisiert', 'app.updatedSub': 'Neu laden für die neueste Version.',
+    'settings.ghostLoadSub': 'Wähle eine beliebige Iron-Log-Backup-Datei',
+    'settings.backupNudge': '{n} Einheiten erfasst — sichere sie', 'settings.backupNudgeSub': 'Einstellungen → Backup exportieren. Dauert fünf Sekunden.',
+    'history.showMore': 'Mehr anzeigen',
     'nav.today': 'Heute', 'nav.plan': 'Plan', 'nav.history': 'Verlauf', 'nav.settings': 'Einstellungen',
     'common.cancel': 'Abbrechen', 'common.save': 'Speichern', 'common.delete': 'Löschen', 'common.back': 'Zurück',
     'today.count': '{done} / {total} Übungen geschafft',

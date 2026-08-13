@@ -546,9 +546,9 @@
     font-family: 'Bebas Neue';
     font-size: 24px;
     line-height: 1;
-    color: #3b82f6 !important;
+    color: hsl(var(--primary));
   }
-  
+
   .pill.active .d {
     color: #ffffff !important;
   }
@@ -566,12 +566,12 @@
   
   /* Moon Icon (Inactive State) */
   .pill .moon-icon {
-    color: #3b82f6;
+    color: hsl(var(--muted-foreground));
     opacity: 1 !important;
   }
-  
+
   .pill .moon-icon svg {
-    stroke: #3b82f6 !important;
+    stroke: hsl(var(--muted-foreground));
   }
   
   /* Moon Icon (Active State) */

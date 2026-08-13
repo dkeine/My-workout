@@ -48,12 +48,20 @@ function putSession(date, sess) {
 }
 
 /* ---- Plans (IL-05/07): stored as data, several at once, one active ---- */
+function clampSets(v) {
+  return Math.max(1, Math.min(10, parseInt(v) || 1));
+}
+
 function loadPlans() {
   let plans = lsGet(LS_PLANS, null);
   if (!plans || !Object.keys(plans).length) {
     plans = { [DEFAULT_PLAN.id]: DEFAULT_PLAN };
     localStorage.setItem(LS_PLANS, JSON.stringify(plans));
   }
+  // heal plans stored before the zero-sets clamp existed
+  Object.values(plans).forEach(p => (p.days || []).forEach(d => (d.exercises || []).forEach(e => {
+    if (e && e.kind !== 'break' && !(e.sets >= 1)) e.sets = clampSets(e.sets);
+  })));
   return plans;
 }
 
@@ -104,12 +112,17 @@ function normalizePlan(p) {
       title: String(d.title || 'Rest Day').slice(0, 60),
       focus: String(d.focus || '').slice(0, 60),
       muscle: COVER_HUES[d.muscle] ? d.muscle : 'rest',
-      exercises: (Array.isArray(d.exercises) ? d.exercises : []).slice(0, 40).map(e => ({
-        name: String(e.name || 'Exercise').slice(0, 80),
-        sets: Math.max(0, Math.min(10, parseInt(e.sets) || 0)),
-        target: String(e.target || '').slice(0, 60),
-        kind: ['exercise', 'cardio', 'break'].includes(e.kind) ? e.kind : 'exercise',
-      })),
+      exercises: (Array.isArray(d.exercises) ? d.exercises : []).slice(0, 40).map(raw => {
+        const e = (raw && typeof raw === 'object') ? raw : {};
+        const kind = ['exercise', 'cardio', 'break'].includes(e.kind) ? e.kind : 'exercise';
+        return {
+          name: String(e.name || 'Exercise').slice(0, 80),
+          // a lift with zero sets can never be completed — clamp to 1+
+          sets: kind === 'break' ? 0 : clampSets(e.sets),
+          target: String(e.target || '').slice(0, 60),
+          kind,
+        };
+      }),
     });
   }
   return { id: String(p.id || newPlanId()), name: String(p.name || 'Split').slice(0, 60), builtin: false, days };

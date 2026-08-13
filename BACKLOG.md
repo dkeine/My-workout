@@ -178,6 +178,36 @@ Claimed by a campaign when their time comes:
 - **Signed drops** — a legendary coach releases their actual program as a link, and
   the fork counter does the talking.
 
+## Round 2 — the re-review backlog *(✅ all shipped)*
+
+Backlog v1 emptied, so the loop ran: re-review (self-review + an independent
+code-review pass), new backlog, ship again. Everything below went out the same day:
+
+- **V2-01 · Unit-aware migration ✅** — CSVs that state lbs/kg in the header now
+  convert into the device unit on import (Hevy `weight_lbs`, FitNotes `(lbs)`).
+- **V2-02 · History at scale ✅** — Recent Sessions renders 30 with *Show more*;
+  a five-year Strong import no longer breaks the half-second rule.
+- **V2-03 · Screen stays awake mid-session ✅** — Wake Lock while today's
+  workout is live; released on completion or leaving the tab.
+- **V2-04 · Import crash fix ✅** *(review finding)* — null exercise entries in a
+  hand-edited backup no longer explode mid-merge.
+- **V2-05 · Zero-set lifts healed ✅** *(review finding)* — clamped at import,
+  editor, and on load for data stored before the fix; one shared `clampSets`.
+- **V2-06 · Voice double-toast fix ✅** — error path fired `onFail` twice.
+- **V2-07 · Update announcements ✅** — when a new service worker takes over, a
+  toast offers a reload (never on first install).
+- **V2-08 · Backup nudge ✅** — every 10th completed session gently points at
+  Export backup. Safer history, zero nagging.
+- **V2-09 · Polish ✅** — day-pill letters on the token color instead of a stray
+  blue, ghost-load row copy, `<html lang>` follows the app language, editor
+  focuses the new exercise input.
+
+**Backlog status: empty.** What remains is exactly what the plan gates:
+IL-15 (gym board) and IL-21 (Monument) need a server and real spread first, and
+the moonshots stay unscheduled on purpose. The next real ticket is not code —
+it's **deployment** (GitHub Pages works: enable it on the repo, point the poster
+at the URL, hang the poster). Then the mixtapes can actually spread.
+
 ## The laws (every ticket, every campaign)
 
 - **The half-second rule:** no screen may open slower than stripping a plate. Perf
