@@ -202,6 +202,33 @@ code-review pass), new backlog, ship again. Everything below went out the same d
   blue, ghost-load row copy, `<html lang>` follows the app language, editor
   focuses the new exercise input.
 
+## Round 3 — The Coach *(✅ all shipped)*
+
+The verdict came down: a logbook is not an A+ training app. RP tells you what to
+lift; Nippard's app charts what you lifted. So Iron Log grew a brain — all
+on-device, all from your own history, still zero servers:
+
+- **V3-01 · The progression engine ✅** — every lift on Today gets a coach call:
+  *load {w} — you owned the top of the range* (double progression), *same load,
+  chase {r} reps*, or *three flat sessions — deload to {w}* (stall detection at
+  constant load). High logged RIR earns a double jump. Tap the chip and the
+  weight loads into your next set.
+- **V3-02 · RIR per set ✅** — a cycling @3→@0 button on every set row (toggle in
+  Settings), stored in the open format, feeding the coach.
+- **V3-03 · Estimated 1RM trends ✅** — per-lift Epley e1RM line chart with lift
+  picker, tap-tooltip, and a data table; built to the dataviz method (one series
+  color, validated, one axis, recessive grid).
+- **V3-04 · Weekly volume by muscle ✅** — hard sets per muscle this week with a
+  last-week tick, via a keyword muscle classifier (chest/back/shoulders/biceps/
+  triceps/legs/core).
+- **V3-05 · Warm-up + plate math ✅** — barbell lifts get a ramp (bar → 55% → 75%
+  → 90%) with plates-per-side for a configurable bar (20/15 kg · 45/35 lb).
+- **V3-06 · Auto rest timer ✅** — checking a set starts a floating 90s pill
+  (+15s / dismiss), vibrates at zero, survives tab switches.
+
+Verified: 43 node unit tests (progression cases, stall vs normal weight-jump,
+muscle classifier, plate math, ramp shape) + 47 Playwright checks, all green.
+
 **Backlog status: empty.** What remains is exactly what the plan gates:
 IL-15 (gym board) and IL-21 (Monument) need a server and real spread first, and
 the moonshots stay unscheduled on purpose. The next real ticket is not code —

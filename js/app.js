@@ -64,6 +64,8 @@ function render() {
       wasComplete = true;
       toast(t('today.crushed'), t('today.crushedSub'));
       releaseWakeLock();
+      const pill = document.getElementById('rest-pill');
+      if (pill) pill.remove();
       const total = computeStats().total;
       if (total > 0 && total % 10 === 0) {
         setTimeout(() => toast(t('settings.backupNudge', { n: total }), t('settings.backupNudgeSub')), 3600);
@@ -199,11 +201,13 @@ function render() {
       const prev = todayPrev[exr.name];
       const summ = summaryStr(prev);
       const ghost = ghostStore && todayGhost[exr.name] ? summaryStr(todayGhost[exr.name]) : null;
+      const coach = (!simple && !exr.skipped && !exr.done) ? coachSuggestion(exr) : null;
 
       el.className = 'card' + (exr.skipped ? ' skipped' : exr.done ? ' done' : '');
       el.dataset.idx = i;
 
       const showMic = !simple && !exr.skipped && voiceAvailable();
+      const showWarmup = !simple && !exr.skipped && isBarbellLift(exr.name);
       let inner = `
         <div class="ex-head" style="justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
@@ -213,6 +217,7 @@ function render() {
             <div style="min-width:0"><div class="ex-name">${esc(exr.name)}</div></div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            ${showWarmup ? `<button class="mic-btn warmup-btn" type="button" title="${t('warmup.title')}" aria-label="${t('warmup.title')}">${icon('layers', 16)}</button>` : ''}
             ${showMic ? `<button class="mic-btn" type="button" title="${t('voice.mic')}" aria-label="${t('voice.mic')}">${icon('mic', 16)}</button>` : ''}
             <button class="skip-btn ${exr.skipped ? 'on' : ''}" type="button">
               ${exr.skipped ? t('today.skipped') : t('today.skip')}
@@ -222,6 +227,14 @@ function render() {
         <div class="ex-target">${esc(exr.target)}</div>
       `;
 
+      if (coach) {
+        const u = getUnit();
+        const msg = coach.type === 'increase' ? t('coach.increase', { w: coach.weight, u })
+          : coach.type === 'deload' ? t('coach.deload', { w: coach.weight, u })
+          : coach.reps ? t('coach.hold', { r: coach.reps })
+          : t('coach.holdFlat', { w: coach.weight, u });
+        inner += `<button class="coach-chip ${coach.type}" type="button">${icon(coach.type === 'deload' ? 'chevronDown' : 'flame', 13)}<span>${esc(msg)}</span></button>`;
+      }
       if (summ && !exr.skipped) {
         inner += `<div class="prev-hint">${icon('trendingUp', 14)}<span>${t('today.last', { when: relDay(prev.date) })} <span class="v">${esc(summ)}</span></span></div>`;
       }
@@ -246,6 +259,7 @@ function render() {
         };
       } else {
         const u = getUnit();
+        const showRir = rirEnabled();
         inner += `<div class="sets-wrap ${exr.skipped ? 'disabled-sets' : ''}" style="display:flex;flex-direction:column;gap:8px;margin-top:12px">`;
         exr.sets.forEach((st, si) => {
           const ps = prev && prev.sets[si];
@@ -256,6 +270,7 @@ function render() {
               <span class="xsign">×</span>
               <div class="setcell"><input type="number" inputmode="numeric" class="r" placeholder="${ps && ps.reps != null ? ps.reps : 'reps'}" value="${st.reps ?? ''}" ${exr.skipped ? 'disabled' : ''}/></div>
             </div>
+            ${showRir ? `<button class="rir-btn ${st.rir != null ? 'on' : ''}" ${exr.skipped ? 'disabled' : ''} title="RIR">${st.rir != null ? '@' + st.rir : 'RIR'}</button>` : ''}
             <button class="checkbtn ${st.done && !exr.skipped ? 'on' : ''}" ${exr.skipped ? 'disabled' : ''}>${icon('check', 20)}</button></div>`;
         });
         inner += `</div>`;
@@ -272,19 +287,43 @@ function render() {
             st.reps = e.target.value === '' ? null : parseInt(e.target.value);
             persistToday();
           };
+          const rirBtn = row.querySelector('.rir-btn');
+          if (rirBtn) rirBtn.onclick = () => {
+            if (exr.skipped) return;
+            st.rir = st.rir == null ? 3 : st.rir === 0 ? null : st.rir - 1;
+            rirBtn.textContent = st.rir != null ? '@' + st.rir : 'RIR';
+            rirBtn.classList.toggle('on', st.rir != null);
+            persistToday();
+          };
           row.querySelector('.checkbtn').onclick = () => {
             if (exr.skipped) return;
             st.done = !st.done;
             row.querySelector('.checkbtn').classList.toggle('on', st.done);
             exr.done = exr.sets.every(s => s.done);
             el.classList.toggle('done', exr.done);
+            if (st.done && autoTimerEnabled()) startRestPill();
             updateProgress();
             persistToday();
           };
         });
       }
 
-      const micBtn = el.querySelector('.mic-btn');
+      const coachChip = el.querySelector('.coach-chip');
+      if (coachChip && coach) {
+        coachChip.onclick = () => {
+          const open = (exr.sets || []).find(st => st.weight == null && !st.done);
+          if (!open) return;
+          open.weight = coach.weight;
+          persistToday();
+          buildCards();
+          toast(t('coach.applied', { w: coach.weight, u: getUnit() }));
+        };
+      }
+
+      const warmupBtn = el.querySelector('.warmup-btn');
+      if (warmupBtn) warmupBtn.onclick = () => openWarmup(exr, coach);
+
+      const micBtn = el.querySelector('.mic-btn:not(.warmup-btn)');
       if (micBtn) {
         micBtn.onclick = () => {
           micBtn.classList.add('listening');
@@ -317,6 +356,81 @@ function render() {
 
       list.appendChild(el);
     });
+  }
+
+  /* ---- Compact auto rest timer (Round 3) ---- */
+  let restPillInt = null;
+
+  function startRestPill(seconds = 90) {
+    const old = document.getElementById('rest-pill');
+    if (old) old.remove();
+    clearInterval(restPillInt);
+    let remaining = seconds;
+    const pill = document.createElement('div');
+    pill.id = 'rest-pill';
+
+    const draw = () => {
+      if (remaining <= 0) {
+        pill.classList.add('done');
+        pill.innerHTML = `${icon('flame', 16)}<b>${t('timer.go')}</b>`;
+        clearInterval(restPillInt);
+        try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+        setTimeout(() => pill.remove(), 2500);
+        return;
+      }
+      pill.innerHTML = `${icon('timer', 16)}<b>${pad(Math.floor(remaining / 60))}:${pad(remaining % 60)}</b><span class="add">+15s</span><span class="x">${icon('x', 14)}</span>`;
+      pill.querySelector('.add').onclick = e => { e.stopPropagation(); remaining += 15; draw(); };
+      pill.querySelector('.x').onclick = e => { e.stopPropagation(); clearInterval(restPillInt); pill.remove(); };
+    };
+
+    draw();
+    document.body.appendChild(pill);
+    restPillInt = setInterval(() => { remaining--; draw(); }, 1000);
+  }
+
+  /* ---- Warm-up ramp + plate math overlay (Round 3) ---- */
+  function openWarmup(exr, coach) {
+    const u = getUnit();
+    let work = null;
+    const withW = (exr.sets || []).find(st => st.weight != null);
+    if (withW) work = withW.weight;
+    else if (coach && coach.weight) work = coach.weight;
+    else {
+      const hist = exerciseHistory(exr.name, 1);
+      if (hist.length) work = Math.max(...hist[0].sets.map(s => s.weight));
+    }
+    if (!work) {
+      toast(t('warmup.noWeight'));
+      return;
+    }
+
+    const plateStr = w => {
+      const ps = platesPerSide(w);
+      return ps.plates.length ? ps.plates.join(' + ') + ' ' + t('warmup.perSide') : t('warmup.noPlates');
+    };
+    const rows = warmupRamp(work).map(r => `
+      <div class="wu-row">
+        <span class="wu-w">${r.weight}${u}</span>
+        <span class="wu-r">× ${r.reps}</span>
+        <span class="wu-p">${r.isBar ? t('warmup.bar') : plateStr(r.weight)}</span>
+      </div>`).join('');
+
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = `<div class="wu-card">
+      <div class="eyebrow" style="margin-bottom:4px">${t('warmup.title')}</div>
+      <h2 class="display" style="font-size:26px;text-transform:uppercase;line-height:1.05;margin-bottom:16px">${esc(exr.name)}</h2>
+      ${rows}
+      <div class="wu-row work">
+        <span class="wu-w">${work}${u}</span>
+        <span class="wu-r">${t('warmup.work')}</span>
+        <span class="wu-p">${plateStr(work)}</span>
+      </div>
+      <button class="btn-primary wu-close">${icon('check', 18)} ${t('timer.close')}</button>
+    </div>`;
+    ov.querySelector('.wu-close').onclick = () => ov.remove();
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
   }
 
   /* ---- PLAN TAB (IL-05..11): view / library / remix editor ---- */
@@ -643,9 +757,25 @@ function render() {
     return true;
   }
 
-  /* ---- HISTORY (+ IL-19 records) ---- */
+  /* ---- HISTORY (+ IL-19 records, Round 3 trends) ---- */
   let recordsExpanded = false;
   let historyLimit = 30; // imported histories can be years long — half-second rule
+  let trendPick = null;
+
+  function buildTrendPoints(name) {
+    const hist = exerciseHistory(name, 15).slice().reverse();
+    return hist.map(h => {
+      let best = null;
+      h.sets.forEach(st => {
+        const e = epley(st.weight, st.reps);
+        if (e != null && (!best || e > best.y)) best = { y: e, w: st.weight, reps: st.reps };
+      });
+      return {
+        label: new Date(h.date + 'T00:00:00').toLocaleDateString(getLang(), { month: 'short', day: 'numeric' }),
+        y: best.y, w: best.w, reps: best.reps,
+      };
+    });
+  }
 
   function fmtDate(iso) {
     const d = new Date(iso + 'T00:00:00');
@@ -715,6 +845,45 @@ function render() {
           : '') +
         '</div>';
 
+    // ---- Trends: e1RM per lift + weekly volume by muscle
+    const freq = {};
+    s.sessions.forEach(sess => (sess.exercises || []).forEach(e => {
+      if (e.kind !== 'exercise') return;
+      if ((e.sets || []).some(st => st.weight != null && st.reps != null)) freq[e.name] = (freq[e.name] || 0) + 1;
+    }));
+    const trendable = Object.entries(freq).filter(([, n]) => n >= 2)
+      .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([n]) => n);
+    if (trendable.length && !trendable.includes(trendPick)) trendPick = trendable[0];
+
+    let trendsHtml = '';
+    let trendPoints = [];
+    if (trendable.length) {
+      trendPoints = buildTrendPoints(trendPick);
+      const svg = trendPoints.length >= 2 ? lineChartSVG(trendPoints, u) : null;
+      const chips = trendable.map(n => `<button class="chip ${n === trendPick ? 'on' : ''}" data-trend="${esc(n)}">${esc(n)}</button>`).join('');
+      const table = svg ? `<details class="chart-data"><summary>${t('trends.data')}</summary>
+        ${trendPoints.map(p => `<div class="chart-data-row"><span>${p.label}</span><span>${p.w}${u} × ${p.reps}</span><b>${p.y}${u}</b></div>`).join('')}
+      </details>` : '';
+      trendsHtml = `
+        <h2 class="display" style="font-size:24px;text-transform:uppercase;margin-top:32px;margin-bottom:12px">${t('trends.title')}</h2>
+        <div class="muscle-chips no-sb" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${chips}</div>
+        <div class="card chart-card" id="trend-chart" style="margin-top:10px">
+          <div class="l seclabel" style="margin-bottom:10px">${t('trends.e1rm')}</div>
+          ${svg || `<p class="muted" style="font-size:12px">${t('trends.noData')}</p>`}
+          <div class="chart-tip" style="display:none"></div>
+          ${table}
+        </div>`;
+    }
+
+    const twVol = weeklyMuscleSets(0), lwVol = weeklyMuscleSets(1);
+    const volBars = muscleBarsHTML(twVol, lwVol);
+    const volumeHtml = volBars ? `
+      <div class="card" style="margin-top:12px;padding:16px">
+        <div class="l seclabel" style="margin-bottom:2px">${t('trends.volume')}</div>
+        <div class="muted" style="font-size:11px;margin-bottom:14px">${t('trends.volumeSub')}</div>
+        ${volBars}
+      </div>` : '';
+
     const shown = recordsExpanded ? records : records.slice(0, 6);
     const recordsHtml = records.length ? `
       <h2 class="display" style="font-size:24px;text-transform:uppercase;margin-top:32px;margin-bottom:12px">${t('history.records')}</h2>
@@ -742,6 +911,8 @@ function render() {
         <div class="l" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:hsl(var(--muted-foreground));margin-bottom:12px">${t('history.thisWeek')}</div>
         <div class="row">${s.grid.map((g, i) => `<div class="col"><span class="dl">${esc(dayShort(i))}</span><div class="circle ${g.done && g.scheduled ? 'on' : ''} ${g.scheduled ? '' : 'off'} ${g.isToday ? 'today' : ''}">${g.done && g.scheduled ? icon('check', 18) : '<span class="pip"></span>'}</div></div>`).join('')}</div>
       </div>
+      ${trendsHtml}
+      ${volumeHtml}
       ${recordsHtml}
       <h2 class="display" style="font-size:24px;text-transform:uppercase;margin-top:32px;margin-bottom:12px">${t('history.recent')}</h2>
       ${sessions}
@@ -752,6 +923,11 @@ function render() {
     if (recToggle) recToggle.onclick = () => { recordsExpanded = !recordsExpanded; render(); };
     const histMore = document.getElementById('hist-more');
     if (histMore) histMore.onclick = () => { historyLimit += 50; render(); };
+    v.querySelectorAll('[data-trend]').forEach(c => {
+      c.onclick = () => { trendPick = c.dataset.trend; render(); };
+    });
+    const trendCard = document.getElementById('trend-chart');
+    if (trendCard && trendCard.querySelector('svg')) wireLineChart(trendCard, trendPoints, u);
   }
 
 /* ---- SETTINGS ---- */
@@ -800,6 +976,20 @@ function renderSettings(v) {
             ${LANGS.map(l => `<option value="${l.id}" ${l.id === lang ? 'selected' : ''}>${l.label}</option>`).join('')}
           </select>
         </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid hsl(var(--border))">
+          <div><div style="font-weight:700;font-size:14px">${t('settings.rir')}</div><div class="muted" style="font-size:12px">${t('settings.rirSub')}</div></div>
+          <button class="toggle ${rirEnabled() ? 'on' : ''}" id="rir-toggle"><span class="knob">${icon('flame', 16)}</span></button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid hsl(var(--border))">
+          <div><div style="font-weight:700;font-size:14px">${t('settings.autoTimer')}</div><div class="muted" style="font-size:12px">${t('settings.autoTimerSub')}</div></div>
+          <button class="toggle ${autoTimerEnabled() ? 'on' : ''}" id="autotimer-toggle"><span class="knob">${icon('timer', 16)}</span></button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid hsl(var(--border))">
+          <div style="font-weight:700;font-size:14px">${t('settings.bar')}</div>
+          <div class="seg">
+            ${(unit === 'lb' ? [45, 35] : [20, 15]).map(b => `<button class="seg-btn ${getBarWeight() === b ? 'on' : ''}" data-bar="${b}">${b}${unit}</button>`).join('')}
+          </div>
+        </div>
       </div>
 
       <div class="card" style="margin-top:12px;padding:20px">
@@ -846,9 +1036,14 @@ function renderSettings(v) {
 
     document.getElementById('theme-toggle').onclick = () => { toggleTheme(); renderSettings(v); };
 
-    v.querySelectorAll('.seg-btn').forEach(b => {
+    v.querySelectorAll('.seg-btn[data-u]').forEach(b => {
       b.onclick = () => { setUnit(b.dataset.u); renderSettings(v); };
     });
+    v.querySelectorAll('.seg-btn[data-bar]').forEach(b => {
+      b.onclick = () => { setBarWeight(+b.dataset.bar); renderSettings(v); };
+    });
+    document.getElementById('rir-toggle').onclick = () => { setRirEnabled(!rirEnabled()); renderSettings(v); };
+    document.getElementById('autotimer-toggle').onclick = () => { setAutoTimerEnabled(!autoTimerEnabled()); renderSettings(v); };
     document.getElementById('lang-select').onchange = e => {
       setLang(e.target.value);
       document.documentElement.lang = getLang();

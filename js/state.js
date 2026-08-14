@@ -145,6 +145,37 @@ function setUnit(u) {
   localStorage.setItem(LS_UNIT, u === 'lb' ? 'lb' : 'kg');
 }
 
+/* ---- Coach-era preferences (Round 3) ---- */
+const LS_RIR = 'ironlog-rir';
+const LS_AUTOTIMER = 'ironlog-autotimer';
+const LS_BAR = 'ironlog-bar';
+
+function rirEnabled() {
+  return localStorage.getItem(LS_RIR) !== '0';
+}
+
+function setRirEnabled(on) {
+  localStorage.setItem(LS_RIR, on ? '1' : '0');
+}
+
+function autoTimerEnabled() {
+  return localStorage.getItem(LS_AUTOTIMER) !== '0';
+}
+
+function setAutoTimerEnabled(on) {
+  localStorage.setItem(LS_AUTOTIMER, on ? '1' : '0');
+}
+
+function getBarWeight() {
+  const v = parseFloat(localStorage.getItem(LS_BAR));
+  if (Number.isFinite(v) && v > 0) return v;
+  return getUnit() === 'lb' ? 45 : 20;
+}
+
+function setBarWeight(v) {
+  localStorage.setItem(LS_BAR, String(v));
+}
+
 /* ---- Session building ---- */
 function buildSession(dayIdx, date) {
   const plan = getActivePlan();

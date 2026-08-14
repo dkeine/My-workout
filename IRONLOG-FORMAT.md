@@ -94,6 +94,9 @@ One logged workout, keyed by local date `YYYY-MM-DD`.
 
 - `weekday` — 0 = Monday … 6 = Sunday.
 - `weight` — number in the user's unit, or `null`. `reps` — integer or `null`.
+- Each set MAY carry `"rir"` (integer 0–4, reps in reserve); absent when not
+  tracked. Added within version 1 — readers ignore unknown fields per the
+  stability promise.
 - `imported` — optional; name of the source app when the session came through a
   migration importer (`"Strong"`, `"Hevy"`, `"FitNotes"`).
 - `completed_count` / `total_count` — cached tallies over trackable exercises
