@@ -97,6 +97,18 @@ One logged workout, keyed by local date `YYYY-MM-DD`.
 - Each set MAY carry `"rir"` (integer 0–4, reps in reserve); absent when not
   tracked. Added within version 1 — readers ignore unknown fields per the
   stability promise.
+- Each set MAY carry `"ts"` (epoch milliseconds, when the set was completed).
+  Rest between sets is derived from consecutive stamps; absent for imported or
+  hand-entered history.
+- An exercise MAY carry `"parked": true`, meaning it was set aside by a
+  shortened session rather than skipped by choice. Parked exercises are also
+  `skipped`, so readers that ignore `parked` still tally correctly.
+
+## 3a. Readiness (optional companion map)
+
+Backups MAY include `"readiness"`: `{ "YYYY-MM-DD": -1 | 0 | 1 }` — the lifter's
+self-report for that day (rough / normal / primed). It scales coaching
+suggestions and is never required to read a session.
 - `imported` — optional; name of the source app when the session came through a
   migration importer (`"Strong"`, `"Hevy"`, `"FitNotes"`).
 - `completed_count` / `total_count` — cached tallies over trackable exercises

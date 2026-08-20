@@ -162,12 +162,67 @@ function render() {
       html += `<div id="complete-banner" class="banner" style="display:${todaySession.completed ? 'flex' : 'none'}">
         <span style="color:hsl(var(--success))">${icon('trophy', 24)}</span>
         <div><div class="t">${t('today.sessionComplete')}</div><div class="s">${t('today.sessionCompleteSub')}</div></div></div>`;
+
+      // P1: one tap before the first set — the body gets a vote
+      if (getReadiness() == null && !todaySession.completed) {
+        html += `<div class="ready-card" id="ready-card">
+          <div class="ready-ask">${t('ready.ask')}</div>
+          <div class="ready-row">
+            <button class="ready-btn" data-r="-1">${t('ready.rough')}</button>
+            <button class="ready-btn" data-r="0">${t('ready.normal')}</button>
+            <button class="ready-btn" data-r="1">${t('ready.primed')}</button>
+          </div>
+        </div>`;
+      }
+
+      // P3: something beats nothing
+      if (!todaySession.completed) {
+        const parked = todaySession.exercises.some(e => e.parked);
+        html += `<div class="btnrow" style="margin-bottom:14px">
+          <button class="btn-sm ${parked ? 'primary' : ''}" id="btn-mvs">${icon('timer', 15)} ${parked ? t('mvs.undo') : t('mvs.cut')}</button>
+        </div>`;
+      }
       html += `<div class="stack" id="ex-list"></div>`;
     }
     html += `</div>`;
     v.innerHTML = html;
     if (!isRest) buildCards();
     syncWakeLock();
+
+    v.querySelectorAll('.ready-btn').forEach(b => {
+      b.onclick = () => {
+        const r = +b.dataset.r;
+        setReadiness(r);
+        render();
+        toast(t('ready.set'), r < 0 ? t('ready.rougSub') : r > 0 ? t('ready.primedSub') : '');
+      };
+    });
+
+    const mvsBtn = document.getElementById('btn-mvs');
+    if (mvsBtn) mvsBtn.onclick = () => {
+      const parked = todaySession.exercises.some(e => e.parked);
+      if (parked) {
+        todaySession.exercises.forEach(e => {
+          if (e.parked) { e.parked = false; e.skipped = false; e.done = (e.sets || []).length ? e.sets.every(s => s.done) : e.done; }
+        });
+        recompute(todaySession);
+        putSession(todaySession.date, todaySession);
+        render();
+        toast(t('mvs.restored'));
+        return;
+      }
+      const plan = minimumViableSession(todaySession, 20);
+      plan.cut.forEach(i => {
+        const e = todaySession.exercises[i];
+        e.parked = true;
+        e.skipped = true;
+        e.done = true;
+      });
+      recompute(todaySession);
+      putSession(todaySession.date, todaySession);
+      render();
+      toast(t('mvs.done', { n: plan.minutes }), t('mvs.doneSub', { c: plan.cut.length }));
+    };
   }
 
   function fillFirstOpenSet(exr, weight, reps, card) {
@@ -201,13 +256,18 @@ function render() {
       const prev = todayPrev[exr.name];
       const summ = summaryStr(prev);
       const ghost = ghostStore && todayGhost[exr.name] ? summaryStr(todayGhost[exr.name]) : null;
-      const coach = (!simple && !exr.skipped && !exr.done) ? coachSuggestion(exr) : null;
+      const live = !simple && !exr.skipped && !exr.done;
+      const comeback = live ? comebackFor(exr.name) : null;
+      const coach = live && !comeback ? applyReadiness(coachSuggestion(exr), getReadiness()) : null;
 
       el.className = 'card' + (exr.skipped ? ' skipped' : exr.done ? ' done' : '');
       el.dataset.idx = i;
 
       const showMic = !simple && !exr.skipped && voiceAvailable();
-      const showWarmup = !simple && !exr.skipped && isBarbellLift(exr.name);
+      // Warming up is about load relative to capacity, not the implement —
+      // offer it for anything you've ever put weight on.
+      const showWarmup = !simple && !exr.skipped &&
+        (isBarbellLift(exr.name) || (prev && prev.sets.some(s => s.weight != null)));
       let inner = `
         <div class="ex-head" style="justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
@@ -227,13 +287,18 @@ function render() {
         <div class="ex-target">${esc(exr.target)}</div>
       `;
 
-      if (coach) {
+      if (comeback) {
         const u = getUnit();
-        const msg = coach.type === 'increase' ? t('coach.increase', { w: coach.weight, u })
+        inner += `<button class="coach-chip comeback" type="button" data-w="${comeback.weight}">${icon('heart', 13)}<span>${esc(t('comeback.title', { d: comeback.days, w: comeback.weight, u }))}</span></button>`;
+      } else if (coach) {
+        const u = getUnit();
+        let msg = coach.type === 'increase' ? t('coach.increase', { w: coach.weight, u })
           : coach.type === 'deload' ? t('coach.deload', { w: coach.weight, u })
           : coach.reps ? t('coach.hold', { r: coach.reps })
           : t('coach.holdFlat', { w: coach.weight, u });
-        inner += `<button class="coach-chip ${coach.type}" type="button">${icon(coach.type === 'deload' ? 'chevronDown' : 'flame', 13)}<span>${esc(msg)}</span></button>`;
+        if (coach.damped) msg += ` — ${t('ready.damped')}`;
+        if (coach.boosted) msg += ` — ${t('ready.boosted')}`;
+        inner += `<button class="coach-chip ${coach.type}" type="button" data-w="${coach.weight}">${icon(coach.type === 'deload' ? 'chevronDown' : 'flame', 13)}<span>${esc(msg)}</span></button>`;
       }
       if (summ && !exr.skipped) {
         inner += `<div class="prev-hint">${icon('trendingUp', 14)}<span>${t('today.last', { when: relDay(prev.date) })} <span class="v">${esc(summ)}</span></span></div>`;
@@ -263,6 +328,10 @@ function render() {
         inner += `<div class="sets-wrap ${exr.skipped ? 'disabled-sets' : ''}" style="display:flex;flex-direction:column;gap:8px;margin-top:12px">`;
         exr.sets.forEach((st, si) => {
           const ps = prev && prev.sets[si];
+          // Repeat the set above, or for the opening set, what you did last time.
+          const above = si > 0 ? exr.sets[si - 1] : (prev && prev.sets[0]) || null;
+          const canDitto = !exr.skipped && !st.done && above && above.weight != null && above.reps != null;
+          const restGap = st.done && above && above.ts && st.ts ? Math.round((st.ts - above.ts) / 1000) : null;
           inner += `<div class="setrow" data-si="${si}">
             <span class="setnum">${si + 1}</span>
             <div style="flex:1;display:flex;align-items:center;gap:8px">
@@ -270,8 +339,10 @@ function render() {
               <span class="xsign">×</span>
               <div class="setcell"><input type="number" inputmode="numeric" class="r" placeholder="${ps && ps.reps != null ? ps.reps : 'reps'}" value="${st.reps ?? ''}" ${exr.skipped ? 'disabled' : ''}/></div>
             </div>
+            ${canDitto ? `<button class="ditto-btn" title="${t('ditto.title')}" aria-label="${t('ditto.title')}">${icon('copy', 15)}</button>` : ''}
             ${showRir ? `<button class="rir-btn ${st.rir != null ? 'on' : ''}" ${exr.skipped ? 'disabled' : ''} title="RIR">${st.rir != null ? '@' + st.rir : 'RIR'}</button>` : ''}
-            <button class="checkbtn ${st.done && !exr.skipped ? 'on' : ''}" ${exr.skipped ? 'disabled' : ''}>${icon('check', 20)}</button></div>`;
+            <button class="checkbtn ${st.done && !exr.skipped ? 'on' : ''}" ${exr.skipped ? 'disabled' : ''}>${icon('check', 20)}</button></div>
+            ${restGap && restGap > 20 && restGap < 900 ? `<div class="rest-truth">${t('rest.actual', { t: pad(Math.floor(restGap / 60)) + ':' + pad(restGap % 60) })}</div>` : ''}`;
         });
         inner += `</div>`;
         el.innerHTML = inner;
@@ -295,9 +366,25 @@ function render() {
             rirBtn.classList.toggle('on', st.rir != null);
             persistToday();
           };
+          const ditto = row.querySelector('.ditto-btn');
+          if (ditto) ditto.onclick = () => {
+            const above = si > 0 ? exr.sets[si - 1] : (prev && prev.sets[0]);
+            if (!above) return;
+            st.weight = above.weight;
+            st.reps = above.reps;
+            if (above.rir != null) st.rir = above.rir;
+            st.done = true;
+            st.ts = Date.now();
+            exr.done = exr.sets.every(s => s.done);
+            if (autoTimerEnabled()) startRestPill();
+            updateProgress();
+            persistToday();
+            buildCards();
+          };
           row.querySelector('.checkbtn').onclick = () => {
             if (exr.skipped) return;
             st.done = !st.done;
+            st.ts = st.done ? Date.now() : null; // P5: rest truth needs real stamps
             row.querySelector('.checkbtn').classList.toggle('on', st.done);
             exr.done = exr.sets.every(s => s.done);
             el.classList.toggle('done', exr.done);
@@ -309,14 +396,15 @@ function render() {
       }
 
       const coachChip = el.querySelector('.coach-chip');
-      if (coachChip && coach) {
+      if (coachChip) {
         coachChip.onclick = () => {
+          const w = parseFloat(coachChip.dataset.w);
           const open = (exr.sets || []).find(st => st.weight == null && !st.done);
-          if (!open) return;
-          open.weight = coach.weight;
+          if (!open || !Number.isFinite(w)) return;
+          open.weight = w;
           persistToday();
           buildCards();
-          toast(t('coach.applied', { w: coach.weight, u: getUnit() }));
+          toast(t('coach.applied', { w, u: getUnit() }));
         };
       }
 
@@ -404,11 +492,14 @@ function render() {
       return;
     }
 
+    // Plate math only means something on a loadable bar.
+    const barbell = isBarbellLift(exr.name);
     const plateStr = w => {
+      if (!barbell) return '';
       const ps = platesPerSide(w);
       return ps.plates.length ? ps.plates.join(' + ') + ' ' + t('warmup.perSide') : t('warmup.noPlates');
     };
-    const rows = warmupRamp(work).map(r => `
+    const rows = warmupRamp(work, barbell).map(r => `
       <div class="wu-row">
         <span class="wu-w">${r.weight}${u}</span>
         <span class="wu-r">× ${r.reps}</span>
@@ -860,6 +951,10 @@ function render() {
     if (trendable.length) {
       trendPoints = buildTrendPoints(trendPick);
       const svg = trendPoints.length >= 2 ? lineChartSVG(trendPoints, u) : null;
+      const fc = prForecast(trendPick);
+      const forecastHtml = fc ? `<div class="forecast">${icon('trendingUp', 14)}<span><b>${t('forecast.on', {
+          w: fc.target, u, date: fc.date.toLocaleDateString(getLang(), { month: 'short', day: 'numeric' })
+        })}</b> · ${t('forecast.rate', { r: fc.perWeek, u })}</span></div>` : '';
       const chips = trendable.map(n => `<button class="chip ${n === trendPick ? 'on' : ''}" data-trend="${esc(n)}">${esc(n)}</button>`).join('');
       const table = svg ? `<details class="chart-data"><summary>${t('trends.data')}</summary>
         ${trendPoints.map(p => `<div class="chart-data-row"><span>${p.label}</span><span>${p.w}${u} × ${p.reps}</span><b>${p.y}${u}</b></div>`).join('')}
@@ -871,9 +966,79 @@ function render() {
           <div class="l seclabel" style="margin-bottom:10px">${t('trends.e1rm')}</div>
           ${svg || `<p class="muted" style="font-size:12px">${t('trends.noData')}</p>`}
           <div class="chart-tip" style="display:none"></div>
+          ${forecastHtml}
           ${table}
         </div>`;
     }
+
+    // ---- P7: load radar
+    const radar = fatigueRadar();
+    const radarHtml = radar ? (() => {
+      const map = {
+        hole: ['fatigue.hole', 'fatigue.holeSub'],
+        building: ['fatigue.building', 'fatigue.buildingSub'],
+        steady: ['fatigue.steady', 'fatigue.steadySub'],
+        light: ['fatigue.light', 'fatigue.lightSub'],
+      }[radar.status];
+      const vars = {
+        v: Math.round(Math.abs(radar.volumeDelta) * 100),
+        p: Math.abs(radar.perfPerLift), u,
+        r: radar.recentSets,
+      };
+      vars.p = radar.status === 'steady' || radar.status === 'light' ? radar.priorSets : vars.p;
+      return `<div class="radar-card ${radar.status}">
+        <div class="radar-head">${icon(radar.status === 'hole' ? 'chevronDown' : radar.status === 'building' ? 'trendingUp' : 'waves', 16)}
+          <span>${t(map[0])}</span></div>
+        <div class="radar-sub">${esc(t(map[1], vars))}</div>
+      </div>` ;
+    })() : '';
+
+    // ---- P2: recovery clocks
+    const clocks = recoveryClocks().filter(c => c.hours != null);
+    const recoveryHtml = clocks.length ? `
+      <div class="card" style="margin-top:12px;padding:16px">
+        <div class="l seclabel" style="margin-bottom:2px">${t('recovery.title')}</div>
+        <div class="muted" style="font-size:11px;margin-bottom:14px">${t('recovery.sub')}</div>
+        ${clocks.map(c => `<div class="vol-row">
+          <span class="vol-label">${t('muscle.' + c.muscle)}</span>
+          <span class="vol-track"><span class="vol-fill rec" style="width:${Math.round(c.fresh * 100)}%"></span></span>
+          <span class="vol-val small">${c.fresh >= 1 ? t('recovery.fresh') : t('recovery.hours', { h: Math.round(c.hours) })}</span>
+        </div>`).join('')}
+      </div>` : '';
+
+    // ---- P6: junk volume
+    const jv = junkVolume(14);
+    const junkHtml = jv.total ? `
+      <div class="card" style="margin-top:12px;padding:16px">
+        <div class="l seclabel" style="margin-bottom:8px">${t('junk.title')}</div>
+        <div style="font-size:12px;line-height:1.6">${jv.junk === 0
+          ? `<span class="muted">${t('junk.none', { d: jv.days })}</span>`
+          : `${esc(t('junk.some', { n: jv.junk, t: jv.total, m: jv.minutes }))}
+             ${jv.worst.length ? `<div class="muted" style="margin-top:6px">${esc(t('junk.worst', { list: jv.worst.map(w => w[0]).join(', ') }))}</div>` : ''}`}
+        </div>
+      </div>` : '';
+
+    // ---- P9: balance ledger
+    const bal = balanceLedger(28);
+    const balanceHtml = bal ? (() => {
+      const rows = [['balance.push', bal.push], ['balance.pull', bal.pull], ['balance.legs', bal.lower], ['balance.core', bal.core]];
+      const max = Math.max(...rows.map(r => r[1]), 1);
+      const advice = bal.findings.length
+        ? bal.findings.map(f => f.kind === 'pull' ? t('balance.needPull', { n: Math.max(1, f.gap) })
+            : f.kind === 'push' ? t('balance.needPush', { n: Math.max(1, f.gap) })
+            : t('balance.needLegs', { n: Math.max(1, f.gap) })).join(' ')
+        : t('balance.even');
+      return `<div class="card" style="margin-top:12px;padding:16px">
+        <div class="l seclabel" style="margin-bottom:2px">${t('balance.title')}</div>
+        <div class="muted" style="font-size:11px;margin-bottom:14px">${t('balance.sub', { d: bal.days })}</div>
+        ${rows.map(([k, val]) => `<div class="vol-row">
+          <span class="vol-label">${t(k)}</span>
+          <span class="vol-track"><span class="vol-fill" style="width:${Math.round(val / max * 100)}%"></span></span>
+          <span class="vol-val">${val}</span>
+        </div>`).join('')}
+        <div class="balance-advice ${bal.findings.length ? 'warn' : ''}">${esc(advice)}</div>
+      </div>`;
+    })() : '';
 
     const twVol = weeklyMuscleSets(0), lwVol = weeklyMuscleSets(1);
     const volBars = muscleBarsHTML(twVol, lwVol);
@@ -911,8 +1076,12 @@ function render() {
         <div class="l" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:hsl(var(--muted-foreground));margin-bottom:12px">${t('history.thisWeek')}</div>
         <div class="row">${s.grid.map((g, i) => `<div class="col"><span class="dl">${esc(dayShort(i))}</span><div class="circle ${g.done && g.scheduled ? 'on' : ''} ${g.scheduled ? '' : 'off'} ${g.isToday ? 'today' : ''}">${g.done && g.scheduled ? icon('check', 18) : '<span class="pip"></span>'}</div></div>`).join('')}</div>
       </div>
+      ${radarHtml}
       ${trendsHtml}
       ${volumeHtml}
+      ${recoveryHtml}
+      ${balanceHtml}
+      ${junkHtml}
       ${recordsHtml}
       <h2 class="display" style="font-size:24px;text-transform:uppercase;margin-top:32px;margin-bottom:12px">${t('history.recent')}</h2>
       ${sessions}

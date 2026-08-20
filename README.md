@@ -12,11 +12,17 @@ is the open data format everything rides on.
 
 - **Today** — your session, with last-time numbers beside every lift, one-tap set
   logging, voice entry ("sixty by twelve"), skip handling, and a rest timer.
+  A readiness tap (Rough / Normal / Primed) scales the coach's calls, "Short on
+  time" cuts the session to twenty honest minutes, and Ditto repeats a set in
+  one tap.
 - **Plan** — the active split, a library of plans, and a remix editor. Any plan
   shares as a link: no server, the URL *is* the split. Splits of any shape
   (3-day, 6-day, whatever) get correct streaks.
 - **History** — streak, week grid, lifetime PRs (the passport), every session,
-  and a shareable streak card for the group chat.
+  and a shareable streak card for the group chat. Plus the read on your
+  training: a load radar (building or digging a hole), recovery clocks per
+  muscle, a push/pull/legs balance ledger, a junk-volume report, and a PR
+  forecast that projects when you hit the next milestone.
 - **Ghost mode** — load anyone's backup (or your own past) and their numbers
   appear as targets to beat.
 - **Data** — export/restore everything as JSON; import your history from

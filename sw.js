@@ -1,7 +1,7 @@
 /* Iron Log service worker (IL-03): precache the app shell, serve
    cache-first. The empire does not pause for bad reception. */
 
-const CACHE = 'ironlog-v3';
+const CACHE = 'ironlog-v4';
 const ASSETS = [
   './',
   'index.html',
@@ -12,6 +12,7 @@ const ASSETS = [
   'js/data.js',
   'js/state.js',
   'js/coach.js',
+  'js/insights.js',
   'js/charts.js',
   'js/qr.js',
   'js/share.js',

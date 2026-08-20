@@ -5,6 +5,7 @@ const LS_PLANS = 'ironlog-plans';
 const LS_ACTIVE = 'ironlog-active-plan';
 const LS_UNIT = 'ironlog-unit';
 const LS_GHOST = 'ironlog-ghost';
+const LS_READINESS = 'ironlog-readiness';
 const LS_PREFIX = 'ironlog-';
 
 const BACKUP_FORMAT = 'ironlog-backup';
@@ -328,6 +329,7 @@ function buildBackup() {
     activePlan: getActivePlanId(),
     plans: loadPlans(),
     sessions: loadSessions(),
+    readiness: lsGet(LS_READINESS, {}),
     records: computeRecords(),
   };
 }
@@ -358,6 +360,11 @@ function mergeBackup(obj) {
     }
   });
   savePlans(plans);
+
+  if (obj.readiness && typeof obj.readiness === 'object') {
+    const merged = { ...obj.readiness, ...lsGet(LS_READINESS, {}) }; // this device wins
+    localStorage.setItem(LS_READINESS, JSON.stringify(merged));
+  }
   return { addedSessions, addedPlans };
 }
 

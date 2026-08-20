@@ -1697,3 +1697,181 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
+
+  /* ---------------- First principles (Round 4) ---------------- */
+
+  /* P1 readiness dial */
+  .ready-card {
+    border-radius: 16px;
+    border: 1px solid hsl(var(--primary) / .3);
+    background: hsl(var(--primary) / .05);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+
+  .ready-ask {
+    font-size: 12px;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin-bottom: 10px;
+  }
+
+  .ready-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ready-btn {
+    flex: 1;
+    height: 42px;
+    border-radius: 10px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .12s, border-color .2s;
+  }
+
+  .ready-btn:active {
+    transform: scale(.96);
+  }
+
+  .ready-btn:hover {
+    border-color: hsl(var(--primary));
+  }
+
+  /* P4 ditto */
+  .ditto-btn {
+    height: 44px;
+    width: 36px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px dashed hsl(var(--border));
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .ditto-btn:active {
+    transform: scale(.92);
+  }
+
+  /* P5 rest truth */
+  .rest-truth {
+    margin: 2px 0 0 32px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground) / .8);
+  }
+
+  /* P8 comeback chip shares the coach chip shape */
+  .coach-chip.comeback {
+    border-color: hsl(200 80% 50% / .4);
+    background: hsl(200 80% 50% / .08);
+    color: hsl(200 80% 42%);
+  }
+
+  html.dark .coach-chip.comeback {
+    color: hsl(200 80% 62%);
+  }
+
+  /* P7 load radar */
+  .radar-card {
+    margin-top: 20px;
+    border-radius: 16px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    padding: 14px 16px;
+    border-left-width: 4px;
+  }
+
+  .radar-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 14px;
+  }
+
+  .radar-sub {
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .radar-card.hole {
+    border-left-color: hsl(45 90% 50%);
+  }
+
+  .radar-card.hole .radar-head {
+    color: hsl(45 90% 42%);
+  }
+
+  html.dark .radar-card.hole .radar-head {
+    color: hsl(45 90% 60%);
+  }
+
+  .radar-card.building {
+    border-left-color: hsl(var(--success));
+  }
+
+  .radar-card.building .radar-head {
+    color: hsl(var(--success));
+  }
+
+  .radar-card.steady,
+  .radar-card.light {
+    border-left-color: hsl(var(--muted-foreground) / .5);
+  }
+
+  /* P2 recovery + P9 balance reuse the volume row */
+  .vol-fill.rec {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--success)));
+  }
+
+  .vol-val.small {
+    width: 52px;
+    font-size: 10px;
+    font-weight: 700;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .balance-advice {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed hsl(var(--border));
+    font-size: 12px;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .balance-advice.warn {
+    color: hsl(var(--primary));
+    font-weight: 700;
+  }
+
+  /* P10 forecast */
+  .forecast {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed hsl(var(--border));
+    font-size: 12px;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .forecast b {
+    color: hsl(var(--primary));
+  }

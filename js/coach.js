@@ -158,20 +158,23 @@ function platesPerSide(total) {
   return { plates: out, exact: side < 1e-9 };
 }
 
-function warmupRamp(workWeight) {
+function warmupRamp(workWeight, useBar = true) {
   const bar = getBarWeight();
-  const steps = [
-    { pct: 0, reps: 10 },
-    { pct: 0.55, reps: 5 },
-    { pct: 0.75, reps: 3 },
-    { pct: 0.9, reps: 1 },
-  ];
+  // A bar has an empty-bar step and a floor; a dumbbell or machine has neither.
+  const steps = useBar
+    ? [{ pct: 0, reps: 10 }, { pct: 0.55, reps: 5 }, { pct: 0.75, reps: 3 }, { pct: 0.9, reps: 1 }]
+    : [{ pct: 0.4, reps: 10 }, { pct: 0.6, reps: 5 }, { pct: 0.8, reps: 3 }];
   const ramp = [];
   steps.forEach(s => {
-    const w = s.pct === 0 ? bar : Math.max(bar, roundToIncrement(workWeight * s.pct));
-    if (w >= workWeight && s.pct > 0) return;
+    if (s.pct === 0) {
+      ramp.push({ weight: bar, reps: s.reps, isBar: true });
+      return;
+    }
+    const raw = roundToIncrement(workWeight * s.pct);
+    const w = useBar ? Math.max(bar, raw) : raw;
+    if (w >= workWeight || w <= 0) return;
     if (ramp.some(r => r.weight === w)) return;
-    ramp.push({ weight: w, reps: s.reps, isBar: s.pct === 0 });
+    ramp.push({ weight: w, reps: s.reps, isBar: false });
   });
   return ramp;
 }

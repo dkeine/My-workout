@@ -229,6 +229,31 @@ on-device, all from your own history, still zero servers:
 Verified: 43 node unit tests (progression cases, stall vs normal weight-jump,
 muscle classifier, plate math, ramp shape) + 47 Playwright checks, all green.
 
+## Round 4 — The First Principles Ten *(✅ all shipped)*
+
+Not a competitor feature list. Ten features derived from what training *is*:
+adaptation is stimulus plus recovery over months, the body's capacity moves
+daily, and the lifter holding the phone has almost no attention to spare.
+
+| # | Principle | Feature |
+|---|---|---|
+| P1 | Capacity varies day to day | **Readiness dial** — one tap (Rough / Normal / Primed) before the first set. A rough day turns the coach's increase into a hold; a primed day unlocks the jump. |
+| P2 | Recovery is the other half of adaptation | **Recovery clocks** — hours since each muscle was last worked, on a 48-hour freshness bar, read from real set timestamps. |
+| P3 | Consistency beats optimization | **Short on time** — one tap cuts the session to ~20 minutes, keeping the compounds and parking the isolation. Fully reversible. |
+| P4 | Cognition is scarce mid-set | **Ditto** — repeat the set above, or on the opening set, what you did last time: fills weight, reps, RIR and checks it in one tap. |
+| P5 | Measure reality, not intention | **Rest truth** — every completed set is stamped, so the app shows what you *actually* rested, not the 90 seconds you meant to. |
+| P6 | Volume is an inverted U | **Junk volume report** — sets logged at 4+ reps in reserve over the last 14 days, with the minutes they cost and the lifts that repeat the mistake. |
+| P7 | Fatigue is systemic | **Load radar** — this week's hard sets against last week's, cross-checked with strength on shared lifts: *building*, *steady*, *backing off*, or *digging a hole*. |
+| P8 | Interruption is normal | **Comeback protocol** — 2+ weeks off an exercise and it opens at a regressed, plate-rounded load (−10/−15/−25% by length of layoff). |
+| P9 | Asymmetry accumulates | **Balance ledger** — push / pull / legs / core hard sets over 28 days, with a concrete prescription ("add ~6 pull sets a week"). |
+| P10 | Progress lives on the months scale | **PR forecast** — least-squares trend on estimated 1RM projects the date you hit the next milestone, and refuses to guess when the data is noise. |
+
+Two engine improvements fell out of building these: the warm-up ramp now serves
+any weighted lift (plate math only where there's a bar to load), and the load
+radar demands a stronger signal when only one lift corroborates it.
+
+Verified: 64 node unit tests + 60 Playwright browser checks, all green.
+
 **Backlog status: empty.** What remains is exactly what the plan gates:
 IL-15 (gym board) and IL-21 (Monument) need a server and real spread first, and
 the moonshots stay unscheduled on purpose. The next real ticket is not code —
